@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: req
+  labels:
+    app: req
+spec:
+  replicas: 33
+  selector:
+    matchLabels:
+      app: req
+  template:
+    metadata:
+      labels:
+        app: req
+    spec:
+      containers:
+        - name: req
+          image: "gcr.io/gke-networking-test-images/random-fully-repro/req:9082a8e__linux_amd64"
+          volumeMounts:
+            - name: startblock
+              mountPath: /tmp/startblock
+      volumes:
+        - name: startblock
+          hostPath:
+            path: /tmp/startblock-9082a8e
+            type: DirectoryOrCreate
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctrl
+  labels:
+    app: ctrl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ctrl
+  template:
+    metadata:
+      labels:
+        app: ctrl
+    spec:
+      containers:
+        - name: ctrl
+          image: "gcr.io/gke-networking-test-images/random-fully-repro/ctrl:9082a8e__linux_amd64"
+          volumeMounts:
+            - name: startblock
+              mountPath: /tmp/startblock-ctrl
+            - name: startblock-dummy
+              mountPath: /tmp/startblock
+      volumes:
+        - name: startblock
+          hostPath:
+            path: /tmp/startblock-9082a8e
+            type: DirectoryOrCreate
+        - name: startblock-dummy
+          emptyDir: {}

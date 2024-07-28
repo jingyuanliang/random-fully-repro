@@ -18,11 +18,53 @@ limitations under the License.
 package main
 
 import (
+	"bufio"
+	"flag"
 	"log"
+	"os"
+	"syscall"
+	"time"
 
 	"github.com/jingyuanliang/random-fully-repro/pkg/version"
 )
 
+var (
+	startblock string
+
+	file *os.File
+)
+
+func init() {
+	flag.StringVar(&startblock, "startblock", "/tmp/startblock/lock", "startblock lock")
+	flag.Parse()
+}
+
+func block() {
+	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX); err != nil {
+		log.Fatalf("lock startblock %q: %v\n", startblock, err)
+	}
+
+	log.Printf("startblock %q is now locked; waiting for stdin before unlocking\n", startblock)
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+
+	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_UN); err != nil {
+		log.Fatalf("unlock startblock %q: %v\n", startblock, err)
+	}
+
+	log.Printf("startblock %q will remain unlocked for 1 second\n", startblock)
+	time.Sleep(time.Second)
+}
+
 func main() {
 	log.Printf("version: %s\n", version.Version)
+
+	var err error
+	file, err = os.OpenFile(startblock, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		log.Fatalf("open startblock: %v\n", err)
+	}
+
+	for {
+		block()
+	}
 }
