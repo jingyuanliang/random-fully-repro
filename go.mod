@@ -1,3 +1,3 @@
-module github.com/thockin/go-build-template
+module github.com/jingyuanliang/random-fully-repro
 
 go 1.21
